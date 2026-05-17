@@ -40,7 +40,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+The following gates are derived from the project constitution:
+
+- [ ] **Code Quality**: Verify no unnecessary complexity; abstractions justified; file sizes within limits.
+- [ ] **Testing Standards**: Verify test strategy covers unit, integration, and contract tests per the testing principle (NON-NEGOTIABLE).
+- [ ] **UX Consistency**: Verify parameter naming, error messages, and output structure follow n8n conventions.
+- [ ] **Performance**: Verify no known performance hotspots; API call patterns are efficient; timeout handling in place.
+- [ ] **Security & Reliability**: Verify credentials use n8n credential system; error paths handled; rate limiting addressed.
+
+If any gate cannot be satisfied, document the violation and justification in the Complexity Tracking section below.
 
 ## Project Structure
 

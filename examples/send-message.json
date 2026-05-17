@@ -1,0 +1,86 @@
+{
+  "name": "Send Telegram Message",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "resource": "instance",
+        "operation": "create",
+        "instanceName": "my-telegram-bot"
+      },
+      "name": "Create Instance",
+      "type": "n8n-nodes-relaystack.relayStack",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "instance",
+        "operation": "sendLoginCode",
+        "instanceName": "my-telegram-bot",
+        "phoneNumber": "+1234567890"
+      },
+      "name": "Send Login Code",
+      "type": "n8n-nodes-relaystack.relayStack",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "instance",
+        "operation": "verifyCode",
+        "instanceName": "my-telegram-bot",
+        "code": "12345"
+      },
+      "name": "Verify Code",
+      "type": "n8n-nodes-relaystack.relayStack",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendText",
+        "instanceName": "my-telegram-bot",
+        "chatId": "+1234567890",
+        "text": "Hello from n8n!"
+      },
+      "name": "Send Message",
+      "type": "n8n-nodes-relaystack.relayStack",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Create Instance", "type": "main", "index": 0 }]]
+    },
+    "Create Instance": {
+      "main": [[{ "node": "Send Login Code", "type": "main", "index": 0 }]]
+    },
+    "Send Login Code": {
+      "main": [[{ "node": "Verify Code", "type": "main", "index": 0 }]]
+    },
+    "Verify Code": {
+      "main": [[{ "node": "Send Message", "type": "main", "index": 0 }]]
+    }
+  }
+}

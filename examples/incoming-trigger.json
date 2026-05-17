@@ -1,0 +1,79 @@
+{
+  "name": "Incoming Message Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "instanceName": "my-telegram-bot",
+        "event": "all"
+      },
+      "name": "RelayStack Trigger",
+      "type": "n8n-nodes-relaystack.relayStackTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      },
+      "webhookId": "relaystack"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.eventType }}",
+              "operation": "equal",
+              "value2": "message_received"
+            }
+          ]
+        }
+      },
+      "name": "Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendText",
+        "instanceName": "={{ $node['RelayStack Trigger'].json.data?.instanceName || $parameter['instanceName'] }}",
+        "chatId": "={{ $json.data?.chatId }}",
+        "text": "Auto-reply: Thanks for your message!"
+      },
+      "name": "Auto Reply",
+      "type": "n8n-nodes-relaystack.relayStack",
+      "typeVersion": 1,
+      "position": [650, 250],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendText",
+        "resource": "message",
+        "instanceName": "={{ $node['RelayStack Trigger'].json.data?.instanceName || $parameter['instanceName'] }}",
+        "chatId": "={{ $json.data?.chatId }}",
+        "text": "Forwarded: {{ $json.data?.text }}"
+      },
+      "name": "Forward to Admin",
+      "type": "n8n-nodes-relaystack.relayStack",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "credentials": {
+        "relayStackApi": "RelayStack API Account"
+      }
+    }
+  ],
+  "connections": {
+    "RelayStack Trigger": {
+      "main": [[{ "node": "Filter", "type": "main", "index": 0 }]]
+    },
+    "Filter": {
+      "main": [
+        [{ "node": "Auto Reply", "type": "main", "index": 0 }],
+        [{ "node": "Forward to Admin", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
