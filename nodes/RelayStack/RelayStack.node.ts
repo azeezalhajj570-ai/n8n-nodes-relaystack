@@ -199,7 +199,7 @@ async function executeMessageOperation(
   switch (operation) {
     case 'sendText': {
       const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
-      const raw = this.getNodeParameter('chatId', itemIndex) as string;
+      const raw = String(this.getNodeParameter('chatId', itemIndex));
       const text = this.getNodeParameter('text', itemIndex) as string;
 
       const trimmed = raw.trim();
