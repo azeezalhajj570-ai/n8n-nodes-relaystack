@@ -38,8 +38,8 @@ export const messageDescription: INodeProperties[] = [
   {
     displayName: 'Chat ID',
     name: 'chatId',
-    type: 'number',
-    default: 0,
+    type: 'string',
+    default: '',
     required: true,
     displayOptions: {
       show: {
@@ -47,7 +47,8 @@ export const messageDescription: INodeProperties[] = [
         operation: ['sendText'],
       },
     },
-    description: 'Numeric ID of the target chat',
+    placeholder: 'e.g. 123456789 or @username or +1234567890',
+    description: 'Chat ID (numeric), @username, or phone number of the target',
   },
   {
     displayName: 'Text',

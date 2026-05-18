@@ -48,12 +48,15 @@ export function normalizeApiError(this: IExecuteFunctions, error: unknown): Node
   if (error instanceof AxiosError) {
     const status = error.response?.status;
     const serverMessage = error.response?.data?.detail || error.response?.data?.message || error.response?.data?.error?.message;
+    const endpointPath = error.config?.url ? new URL(error.config.url).pathname : 'unknown';
 
-    let message = `Telegram API Gateway error: ${error.message}`;
-    if (status === 401) {
+    let message: string;
+    if (status === 400) {
+      message = serverMessage || 'Bad request. Please check your input values.';
+    } else if (status === 401) {
       message = 'Invalid API key. Please check your credentials.';
     } else if (status === 404) {
-      message = 'Resource not found. The requested instance or endpoint does not exist.';
+      message = `Resource not found (${endpointPath}). Verify the instance ID and endpoint.`;
     } else if (status === 422) {
       const detail = error.response?.data?.detail;
       if (Array.isArray(detail)) {
@@ -65,12 +68,16 @@ export function normalizeApiError(this: IExecuteFunctions, error: unknown): Node
       }
     } else if (status === 429) {
       message = 'Rate limit exceeded. Please wait before making more requests.';
+    } else if (status && status >= 500) {
+      message = serverMessage || `Server error (${status}). The API gateway encountered an internal error.`;
     } else if (serverMessage) {
-      message = `Telegram API Gateway error: ${serverMessage}`;
+      message = serverMessage;
     } else if (error.code === 'ECONNREFUSED' || error.code === 'ECONNABORTED') {
       message = 'Could not connect to the API server. Please verify the Base URL.';
     } else if (error.code === 'ETIMEDOUT') {
       message = 'Connection to the API server timed out. Please check network connectivity.';
+    } else {
+      message = `API request failed: ${error.message}`;
     }
 
     return new NodeOperationError(this.getNode(), message);

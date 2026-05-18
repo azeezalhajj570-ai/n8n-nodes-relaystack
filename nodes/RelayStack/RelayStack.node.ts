@@ -199,8 +199,9 @@ async function executeMessageOperation(
   switch (operation) {
     case 'sendText': {
       const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
-      const chatId = this.getNodeParameter('chatId', itemIndex) as number;
+      const rawChatId = this.getNodeParameter('chatId', itemIndex) as string;
       const text = this.getNodeParameter('text', itemIndex) as string;
+      const chatId = parseChatId(rawChatId);
       return relayStackApiRequest.call(this, {
         method: 'POST',
         endpoint: `/instances/${instanceId}/send-message`,
@@ -291,4 +292,13 @@ async function executeEventOperation(
     default:
       throw new Error(`Operation "${operation}" is not supported for Event resource`);
   }
+}
+
+function parseChatId(raw: string): number {
+  const trimmed = raw.trim();
+  const stripped = trimmed.replace(/^[@+ ]+/, '').replace(/[^0-9-]/g, '');
+  if (!stripped || stripped === '-') {
+    throw new Error(`Invalid Chat ID: "${raw}". Use a numeric ID, @username, or phone number.`);
+  }
+  return parseInt(stripped, 10);
 }
