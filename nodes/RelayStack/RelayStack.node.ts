@@ -199,13 +199,28 @@ async function executeMessageOperation(
   switch (operation) {
     case 'sendText': {
       const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
-      const rawChatId = this.getNodeParameter('chatId', itemIndex) as string;
+      const raw = this.getNodeParameter('chatId', itemIndex) as string;
       const text = this.getNodeParameter('text', itemIndex) as string;
-      const chatId = parseChatId(rawChatId);
+
+      const trimmed = raw.trim();
+      let body: IDataObject;
+
+      if (/^-?\d+$/.test(trimmed)) {
+        body = { chat_id: parseInt(trimmed, 10), text };
+      } else if (trimmed.startsWith('@')) {
+        body = { username: trimmed, text };
+      } else if (trimmed.startsWith('+')) {
+        body = { phone_number: trimmed, text };
+      } else {
+        throw new Error(
+          `Invalid Chat ID: "${raw}". Use a numeric ID (123456), @username, or phone number (+1234567890).`,
+        );
+      }
+
       return relayStackApiRequest.call(this, {
         method: 'POST',
         endpoint: `/instances/${instanceId}/send-message`,
-        body: { chat_id: chatId, text },
+        body,
       });
     }
 
@@ -294,11 +309,4 @@ async function executeEventOperation(
   }
 }
 
-function parseChatId(raw: string): number {
-  const trimmed = raw.trim();
-  const stripped = trimmed.replace(/^[@+ ]+/, '').replace(/[^0-9-]/g, '');
-  if (!stripped || stripped === '-') {
-    throw new Error(`Invalid Chat ID: "${raw}". Use a numeric ID, @username, or phone number.`);
-  }
-  return parseInt(stripped, 10);
-}
+
