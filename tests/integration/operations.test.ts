@@ -23,13 +23,13 @@ beforeEach(() => {
 describe('Instance Operations', () => {
   it('should create an instance', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { instance: { instanceName: 'my-instance', status: 'created' } };
-    mock.onPost('https://relaystack.example.com/instance/create').reply(200, responseData);
+    const responseData = { id: 'uuid-1', name: 'my-instance', status: 'pending' };
+    mock.onPost('https://relaystack.example.com/instances').reply(201, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'POST',
-      endpoint: '/instance/create',
-      body: { instanceName: 'my-instance', integration: 'telegram' },
+      endpoint: '/instances',
+      body: { name: 'my-instance' },
     });
 
     expect(result).toEqual(responseData);
@@ -37,12 +37,12 @@ describe('Instance Operations', () => {
 
   it('should list instances', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { instances: [{ instanceName: 'my-instance', status: 'created' }] };
-    mock.onGet('https://relaystack.example.com/instance/list').reply(200, responseData);
+    const responseData = { instances: [{ id: 'uuid-1', name: 'my-instance', status: 'pending' }] };
+    mock.onGet('https://relaystack.example.com/instances').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/instance/list',
+      endpoint: '/instances',
     });
 
     expect(Array.isArray(result.instances)).toBe(true);
@@ -50,75 +50,118 @@ describe('Instance Operations', () => {
 
   it('should get a single instance', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { instance: { instanceName: 'my-instance', status: 'connected' } };
-    mock.onGet('https://relaystack.example.com/instance/my-instance').reply(200, responseData);
+    const responseData = { id: 'uuid-1', name: 'my-instance', status: 'connected' };
+    mock.onGet('https://relaystack.example.com/instances/uuid-1').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/instance/my-instance',
+      endpoint: '/instances/uuid-1',
     });
 
-    expect((result.instance as { instanceName: string }).instanceName).toBe('my-instance');
+    expect((result as { id: string }).id).toBe('uuid-1');
   });
 
   it('should delete an instance', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    mock.onDelete('https://relaystack.example.com/instance/my-instance').reply(200, { success: true });
+    mock.onDelete('https://relaystack.example.com/instances/uuid-1').reply(204);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'DELETE',
-      endpoint: '/instance/my-instance',
+      endpoint: '/instances/uuid-1',
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({});
   });
 
   it('should connect an instance', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { instance: { instanceName: 'my-instance', status: 'connected' } };
-    mock.onPost('https://relaystack.example.com/instance/connect/my-instance').reply(200, responseData);
+    const responseData = { status: 'connected' };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/auth/connect').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'POST',
-      endpoint: '/instance/connect/my-instance',
+      endpoint: '/instances/uuid-1/auth/connect',
     });
 
-    expect((result.instance as { status: string }).status).toBe('connected');
+    expect((result as { status: string }).status).toBe('connected');
   });
 
   it('should disconnect an instance', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    mock.onPost('https://relaystack.example.com/instance/disconnect/my-instance').reply(200, { success: true });
+    const responseData = { status: 'disconnected' };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/auth/disconnect').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'POST',
-      endpoint: '/instance/disconnect/my-instance',
+      endpoint: '/instances/uuid-1/auth/disconnect',
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual(responseData);
   });
 
   it('should get connection status', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { status: 'connected' };
-    mock.onGet('https://relaystack.example.com/instance/connectionState/my-instance').reply(200, responseData);
+    const responseData = { id: 'uuid-1', name: 'my-instance', status: 'connected' };
+    mock.onGet('https://relaystack.example.com/instances/uuid-1/status').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/instance/connectionState/my-instance',
+      endpoint: '/instances/uuid-1/status',
     });
 
-    expect(result).toEqual({ status: 'connected' });
+    expect(result).toEqual(responseData);
+  });
+
+  it('should send a login code', async () => {
+    const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
+    const responseData = { status: 'code_sent' };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/auth/send-code').reply(200, responseData);
+
+    const result = await relayStackApiRequest.call(mockExecuteFunctions, {
+      method: 'POST',
+      endpoint: '/instances/uuid-1/auth/send-code',
+      body: { phone_number: '+1234567890' },
+    });
+
+    expect(result).toEqual(responseData);
+  });
+
+  it('should verify a login code', async () => {
+    const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
+    const responseData = { status: 'authenticated' };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/auth/verify-code').reply(200, responseData);
+
+    const result = await relayStackApiRequest.call(mockExecuteFunctions, {
+      method: 'POST',
+      endpoint: '/instances/uuid-1/auth/verify-code',
+      body: { code: '12345' },
+    });
+
+    expect(result).toEqual(responseData);
+  });
+
+  it('should verify 2FA password', async () => {
+    const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
+    const responseData = { status: 'authenticated' };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/auth/2fa').reply(200, responseData);
+
+    const result = await relayStackApiRequest.call(mockExecuteFunctions, {
+      method: 'POST',
+      endpoint: '/instances/uuid-1/auth/2fa',
+      body: { password: 'secret' },
+    });
+
+    expect(result).toEqual(responseData);
   });
 
   it('should handle API errors gracefully', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    mock.onGet('https://relaystack.example.com/instance/nonexistent').reply(404);
+    mock.onGet('https://relaystack.example.com/instances/nonexistent').reply(404);
 
     await expect(
       relayStackApiRequest.call(mockExecuteFunctions, {
         method: 'GET',
-        endpoint: '/instance/nonexistent',
+        endpoint: '/instances/nonexistent',
       }),
     ).rejects.toThrow('Resource not found');
   });
@@ -127,29 +170,29 @@ describe('Instance Operations', () => {
 describe('Message Operations', () => {
   it('should send a text message', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { message: { id: 'msg-123', status: 'sent' } };
-    const requestBody = { number: '+1234567890', text: 'Hello world', options: { delay: 0 } };
-    mock.onPost('https://relaystack.example.com/message/sendText/my-instance', requestBody).reply(200, responseData);
+    const responseData = { message_id: 123, chat_id: 456, status: 'sent' };
+    const requestBody = { chat_id: 456, text: 'Hello world' };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/send-message', requestBody).reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'POST',
-      endpoint: '/message/sendText/my-instance',
+      endpoint: '/instances/uuid-1/send-message',
       body: requestBody,
     });
 
-    expect((result.message as { id: string }).id).toBe('msg-123');
+    expect((result as { message_id: number }).message_id).toBe(123);
   });
 });
 
 describe('Chat Operations', () => {
   it('should list chats', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { chats: [{ chatId: 'chat-1', name: 'Test Chat', type: 'private' }] };
-    mock.onGet('https://relaystack.example.com/chat/find/my-instance').reply(200, responseData);
+    const responseData = { chats: [{ chat_id: 123, title: 'Test Chat', type: 'private' }] };
+    mock.onGet('https://relaystack.example.com/instances/uuid-1/chats').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/chat/find/my-instance',
+      endpoint: '/instances/uuid-1/chats',
     });
 
     expect(Array.isArray(result.chats)).toBe(true);
@@ -159,66 +202,92 @@ describe('Chat Operations', () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
     const responseData = {
       messages: [
-        { messageId: 'msg-1', content: 'Hello', direction: 'received' },
+        { message_id: 1, chat_id: 123, sender_id: 456, text: 'Hello', date: '2026-01-01T00:00:00Z' },
       ],
     };
-    mock.onGet('https://relaystack.example.com/chat/messages/my-instance').reply((config) => {
-      expect(config.params).toEqual({ chatId: 'chat-1', limit: 10, offset: 0 });
+    mock.onGet('https://relaystack.example.com/instances/uuid-1/chats/123/messages').reply((config) => {
+      expect(config.params).toEqual({ limit: 50 });
       return [200, responseData];
     });
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/chat/messages/my-instance',
-      query: { chatId: 'chat-1', limit: 10, offset: 0 },
+      endpoint: '/instances/uuid-1/chats/123/messages',
+      query: { limit: 50 },
     });
 
     expect(Array.isArray(result.messages)).toBe(true);
+  });
+
+  it('should get chat messages with offset_id', async () => {
+    const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
+    const responseData = { messages: [] };
+    mock.onGet('https://relaystack.example.com/instances/uuid-1/chats/123/messages').reply((config) => {
+      expect(config.params).toEqual({ limit: 20, offset_id: 100 });
+      return [200, responseData];
+    });
+
+    const result = await relayStackApiRequest.call(mockExecuteFunctions, {
+      method: 'GET',
+      endpoint: '/instances/uuid-1/chats/123/messages',
+      query: { limit: 20, offset_id: 100 },
+    });
+
+    expect(result).toEqual(responseData);
   });
 });
 
 describe('Event Operations', () => {
   it('should set a webhook', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const requestBody = {
-      webhookUrl: 'https://n8n.example.com/webhook/relaystack',
-      events: ['message_received'],
-      enable: true,
-    };
-    const responseData = { webhook: { url: 'https://n8n.example.com/webhook/relaystack', events: ['message_received'] } };
-    mock.onPost('https://relaystack.example.com/webhook/set/my-instance', requestBody).reply(200, responseData);
+    const requestBody = { url: 'https://n8n.example.com/webhook/relaystack' };
+    const responseData = { id: 'wh-uuid', url: 'https://n8n.example.com/webhook/relaystack', is_active: true };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/webhook', requestBody).reply(201, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'POST',
-      endpoint: '/webhook/set/my-instance',
+      endpoint: '/instances/uuid-1/webhook',
       body: requestBody,
     });
 
-    expect((result.webhook as { url: string }).url).toBe('https://n8n.example.com/webhook/relaystack');
+    expect((result as { url: string }).url).toBe('https://n8n.example.com/webhook/relaystack');
   });
 
   it('should get webhook configuration', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { webhook: { url: 'https://n8n.example.com/webhook', events: ['message_received'] } };
-    mock.onGet('https://relaystack.example.com/webhook/find/my-instance').reply(200, responseData);
+    const responseData = { id: 'wh-uuid', url: 'https://n8n.example.com/webhook', is_active: true };
+    mock.onGet('https://relaystack.example.com/instances/uuid-1/webhook').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/webhook/find/my-instance',
+      endpoint: '/instances/uuid-1/webhook',
     });
 
-    expect(result.webhook).toBeDefined();
+    expect(result).toBeDefined();
   });
 
   it('should delete a webhook', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    mock.onDelete('https://relaystack.example.com/webhook/delete/my-instance').reply(200, { success: true });
+    mock.onDelete('https://relaystack.example.com/instances/uuid-1/webhook').reply(204);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'DELETE',
-      endpoint: '/webhook/delete/my-instance',
+      endpoint: '/instances/uuid-1/webhook',
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({});
+  });
+
+  it('should test a webhook', async () => {
+    const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
+    const responseData = { status: 'sent', status_code: 200 };
+    mock.onPost('https://relaystack.example.com/instances/uuid-1/webhook/test').reply(200, responseData);
+
+    const result = await relayStackApiRequest.call(mockExecuteFunctions, {
+      method: 'POST',
+      endpoint: '/instances/uuid-1/webhook/test',
+    });
+
+    expect(result).toEqual(responseData);
   });
 });

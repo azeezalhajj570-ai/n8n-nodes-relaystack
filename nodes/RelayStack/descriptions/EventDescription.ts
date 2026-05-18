@@ -15,7 +15,7 @@ export const eventDescription: INodeProperties[] = [
       {
         name: 'Set Webhook',
         value: 'setWebhook',
-        description: 'Set webhook configuration for an instance',
+        description: 'Set webhook URL for an instance',
         action: 'Set webhook',
       },
       {
@@ -40,8 +40,8 @@ export const eventDescription: INodeProperties[] = [
     default: 'setWebhook',
   },
   {
-    displayName: 'Instance Name',
-    name: 'instanceName',
+    displayName: 'Instance ID',
+    name: 'instanceId',
     type: 'string',
     default: '',
     required: true,
@@ -51,7 +51,7 @@ export const eventDescription: INodeProperties[] = [
         operation: ['setWebhook', 'getWebhook', 'deleteWebhook', 'testWebhook'],
       },
     },
-    description: 'Name of the connected instance',
+    description: 'UUID of the connected instance',
   },
   {
     displayName: 'Webhook URL',
@@ -66,40 +66,5 @@ export const eventDescription: INodeProperties[] = [
       },
     },
     description: 'URL to receive webhook events',
-  },
-  {
-    displayName: 'Events',
-    name: 'events',
-    type: 'multiOptions',
-    displayOptions: {
-      show: {
-        resource: ['event'],
-        operation: ['setWebhook'],
-      },
-    },
-    options: [
-      {
-        name: 'Message Received',
-        value: 'message_received',
-        description: 'When a new message is received',
-      },
-      {
-        name: 'Message Sent',
-        value: 'message_sent',
-        description: 'When a message is sent',
-      },
-      {
-        name: 'Connection Status Changed',
-        value: 'connection_state',
-        description: 'When connection status changes',
-      },
-      {
-        name: 'Authentication Required',
-        value: 'auth_request',
-        description: 'When authentication is needed',
-      },
-    ],
-    default: ['message_received'],
-    description: 'Event types to enable for the webhook',
   },
 ];

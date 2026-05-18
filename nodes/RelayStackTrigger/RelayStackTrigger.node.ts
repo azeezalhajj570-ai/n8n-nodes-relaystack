@@ -16,7 +16,7 @@ export class RelayStackTrigger implements INodeType {
     group: ['trigger'],
     version: 1,
     subtitle: '={{$parameter["event"]}}',
-    description: 'Receive RelayStack events via webhook',
+    description: 'Receive Telegram API Gateway events via webhook',
     defaults: {
       name: 'RelayStack Trigger',
     },
@@ -38,12 +38,12 @@ export class RelayStackTrigger implements INodeType {
     ],
     properties: [
       {
-        displayName: 'Instance Name',
-        name: 'instanceName',
+        displayName: 'Instance ID',
+        name: 'instanceId',
         type: 'string',
         default: '',
         required: true,
-        description: 'Name of the RelayStack instance to receive events from',
+        description: 'UUID of the instance to receive events from',
       },
       {
         displayName: 'Event',
@@ -85,9 +85,9 @@ export class RelayStackTrigger implements INodeType {
   webhookMethods = {
     default: {
       async checkExists(this: IHookFunctions): Promise<boolean> {
-        const instanceName = this.getNodeParameter('instanceName') as string;
+        const instanceId = this.getNodeParameter('instanceId') as string;
         try {
-          await relayStackTriggerApiRequest.call(this, 'GET', `/webhook/find/${instanceName}`);
+          await relayStackTriggerApiRequest.call(this, 'GET', `/instances/${instanceId}/webhook`);
           return true;
         } catch {
           return false;
@@ -95,24 +95,21 @@ export class RelayStackTrigger implements INodeType {
       },
 
       async create(this: IHookFunctions): Promise<boolean> {
-        const instanceName = this.getNodeParameter('instanceName') as string;
+        const instanceId = this.getNodeParameter('instanceId') as string;
         const webhookUrl = this.getNodeWebhookUrl('default');
         if (!webhookUrl) {
           throw new NodeOperationError(this.getNode(), 'Could not get webhook URL');
         }
-        const events = ['message_received', 'message_sent', 'connection_state', 'auth_request'];
-        await relayStackTriggerApiRequest.call(this, 'POST', `/webhook/set/${instanceName}`, {
-          webhookUrl,
-          events,
-          enable: true,
+        await relayStackTriggerApiRequest.call(this, 'POST', `/instances/${instanceId}/webhook`, {
+          url: webhookUrl,
         });
         return true;
       },
 
       async delete(this: IHookFunctions): Promise<boolean> {
-        const instanceName = this.getNodeParameter('instanceName') as string;
+        const instanceId = this.getNodeParameter('instanceId') as string;
         try {
-          await relayStackTriggerApiRequest.call(this, 'DELETE', `/webhook/delete/${instanceName}`);
+          await relayStackTriggerApiRequest.call(this, 'DELETE', `/instances/${instanceId}/webhook`);
         } catch (_error) {
           // Webhook may have already been deleted — ignore silently
         }
@@ -165,6 +162,6 @@ async function relayStackTriggerApiRequest(
     const response = await axios(config);
     return response.data;
   } catch (error) {
-    throw new NodeOperationError(this.getNode(), `RelayStack API error: ${(error as Error).message}`);
+    throw new NodeOperationError(this.getNode(), `Telegram API Gateway error: ${(error as Error).message}`);
   }
 }

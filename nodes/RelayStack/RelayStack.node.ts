@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { instanceDescription } from './descriptions/InstanceDescription';
 import { messageDescription } from './descriptions/MessageDescription';
 import { chatDescription } from './descriptions/ChatDescription';
@@ -13,7 +13,7 @@ export class RelayStack implements INodeType {
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
-    description: 'Interact with RelayStack API',
+    description: 'Interact with Telegram API Gateway',
     defaults: {
       name: 'RelayStack',
     },
@@ -100,75 +100,88 @@ async function executeInstanceOperation(
   operation: string,
   itemIndex: number,
 ) {
-  const instanceName = this.getNodeParameter('instanceName', itemIndex, '') as string;
-
   switch (operation) {
-    case 'create':
+    case 'create': {
+      const instanceName = this.getNodeParameter('instanceName', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: '/instance/create',
-        body: { instanceName, integration: 'telegram' },
+        endpoint: '/instances',
+        body: { name: instanceName },
       });
+    }
 
     case 'list':
       return relayStackApiRequest.call(this, {
         method: 'GET',
-        endpoint: '/instance/list',
+        endpoint: '/instances',
       });
 
-    case 'get':
+    case 'get': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'GET',
-        endpoint: `/instance/${instanceName}`,
+        endpoint: `/instances/${instanceId}`,
       });
+    }
 
-    case 'delete':
+    case 'delete': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'DELETE',
-        endpoint: `/instance/${instanceName}`,
+        endpoint: `/instances/${instanceId}`,
       });
+    }
 
-    case 'connect':
+    case 'connect': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/instance/connect/${instanceName}`,
+        endpoint: `/instances/${instanceId}/auth/connect`,
       });
+    }
 
-    case 'disconnect':
+    case 'disconnect': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/instance/disconnect/${instanceName}`,
+        endpoint: `/instances/${instanceId}/auth/disconnect`,
       });
+    }
 
-    case 'status':
+    case 'status': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'GET',
-        endpoint: `/instance/connectionState/${instanceName}`,
+        endpoint: `/instances/${instanceId}/status`,
       });
+    }
 
     case 'sendLoginCode': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       const phoneNumber = this.getNodeParameter('phoneNumber', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/instance/sendCode/${instanceName}`,
-        body: { phoneNumber },
+        endpoint: `/instances/${instanceId}/auth/send-code`,
+        body: { phone_number: phoneNumber },
       });
     }
 
     case 'verifyCode': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       const code = this.getNodeParameter('code', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/instance/verifyCode/${instanceName}`,
+        endpoint: `/instances/${instanceId}/auth/verify-code`,
         body: { code },
       });
     }
 
     case 'verifyPassword': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       const password = this.getNodeParameter('password', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/instance/verifyPassword/${instanceName}`,
+        endpoint: `/instances/${instanceId}/auth/2fa`,
         body: { password },
       });
     }
@@ -183,16 +196,15 @@ async function executeMessageOperation(
   operation: string,
   itemIndex: number,
 ) {
-  const instanceName = this.getNodeParameter('instanceName', itemIndex, '') as string;
-
   switch (operation) {
     case 'sendText': {
-      const chatId = this.getNodeParameter('chatId', itemIndex) as string;
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
+      const chatId = this.getNodeParameter('chatId', itemIndex) as number;
       const text = this.getNodeParameter('text', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/message/sendText/${instanceName}`,
-        body: { number: chatId, text, options: { delay: 0 } },
+        endpoint: `/instances/${instanceId}/send-message`,
+        body: { chat_id: chatId, text },
       });
     }
 
@@ -206,23 +218,28 @@ async function executeChatOperation(
   operation: string,
   itemIndex: number,
 ) {
-  const instanceName = this.getNodeParameter('instanceName', itemIndex, '') as string;
-
   switch (operation) {
-    case 'listChats':
+    case 'listChats': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'GET',
-        endpoint: `/chat/find/${instanceName}`,
+        endpoint: `/instances/${instanceId}/chats`,
       });
+    }
 
     case 'getChatMessages': {
-      const chatId = this.getNodeParameter('chatId', itemIndex) as string;
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
+      const chatId = this.getNodeParameter('chatId', itemIndex) as number;
       const limit = this.getNodeParameter('limit', itemIndex) as number;
-      const offset = this.getNodeParameter('offset', itemIndex) as number;
+      const offsetId = this.getNodeParameter('offsetId', itemIndex) as number;
+      const query: IDataObject = { limit };
+      if (offsetId > 0) {
+        query.offset_id = offsetId;
+      }
       return relayStackApiRequest.call(this, {
         method: 'GET',
-        endpoint: `/chat/messages/${instanceName}`,
-        query: { chatId, limit, offset },
+        endpoint: `/instances/${instanceId}/chats/${chatId}/messages`,
+        query,
       });
     }
 
@@ -236,36 +253,40 @@ async function executeEventOperation(
   operation: string,
   itemIndex: number,
 ) {
-  const instanceName = this.getNodeParameter('instanceName', itemIndex, '') as string;
-
   switch (operation) {
     case 'setWebhook': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       const webhookUrl = this.getNodeParameter('webhookUrl', itemIndex) as string;
-      const events = this.getNodeParameter('events', itemIndex) as string[];
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/webhook/set/${instanceName}`,
-        body: { webhookUrl, events, enable: true },
+        endpoint: `/instances/${instanceId}/webhook`,
+        body: { url: webhookUrl },
       });
     }
 
-    case 'getWebhook':
+    case 'getWebhook': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'GET',
-        endpoint: `/webhook/find/${instanceName}`,
+        endpoint: `/instances/${instanceId}/webhook`,
       });
+    }
 
-    case 'deleteWebhook':
+    case 'deleteWebhook': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'DELETE',
-        endpoint: `/webhook/delete/${instanceName}`,
+        endpoint: `/instances/${instanceId}/webhook`,
       });
+    }
 
-    case 'testWebhook':
+    case 'testWebhook': {
+      const instanceId = this.getNodeParameter('instanceId', itemIndex) as string;
       return relayStackApiRequest.call(this, {
         method: 'POST',
-        endpoint: `/webhook/test/${instanceName}`,
+        endpoint: `/instances/${instanceId}/webhook/test`,
       });
+    }
 
     default:
       throw new Error(`Operation "${operation}" is not supported for Event resource`);

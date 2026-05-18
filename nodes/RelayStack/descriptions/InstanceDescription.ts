@@ -27,7 +27,7 @@ export const instanceDescription: INodeProperties[] = [
       {
         name: 'Get',
         value: 'get',
-        description: 'Get a single instance by name',
+        description: 'Get a single instance by ID',
         action: 'Get an instance',
       },
       {
@@ -84,10 +84,24 @@ export const instanceDescription: INodeProperties[] = [
     displayOptions: {
       show: {
         resource: ['instance'],
-        operation: ['create', 'get', 'delete', 'connect', 'disconnect', 'status', 'sendLoginCode', 'verifyCode', 'verifyPassword'],
+        operation: ['create'],
       },
     },
-    description: 'Name of the messaging instance',
+    description: 'Name for the new instance',
+  },
+  {
+    displayName: 'Instance ID',
+    name: 'instanceId',
+    type: 'string',
+    default: '',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['instance'],
+        operation: ['get', 'delete', 'connect', 'disconnect', 'status', 'sendLoginCode', 'verifyCode', 'verifyPassword'],
+      },
+    },
+    description: 'UUID of the instance (obtained from Create or List)',
   },
   {
     displayName: 'Phone Number',

@@ -28,8 +28,8 @@ export const chatDescription: INodeProperties[] = [
     default: 'listChats',
   },
   {
-    displayName: 'Instance Name',
-    name: 'instanceName',
+    displayName: 'Instance ID',
+    name: 'instanceId',
     type: 'string',
     default: '',
     required: true,
@@ -39,13 +39,13 @@ export const chatDescription: INodeProperties[] = [
         operation: ['listChats', 'getChatMessages'],
       },
     },
-    description: 'Name of the connected instance',
+    description: 'UUID of the connected instance',
   },
   {
     displayName: 'Chat ID',
     name: 'chatId',
-    type: 'string',
-    default: '',
+    type: 'number',
+    default: 0,
     required: true,
     displayOptions: {
       show: {
@@ -53,7 +53,7 @@ export const chatDescription: INodeProperties[] = [
         operation: ['getChatMessages'],
       },
     },
-    description: 'ID of the chat to fetch messages from',
+    description: 'Numeric ID of the chat to fetch messages from',
   },
   {
     displayName: 'Limit',
@@ -61,19 +61,20 @@ export const chatDescription: INodeProperties[] = [
     type: 'number',
     typeOptions: {
       minValue: 1,
+      maxValue: 100,
     },
-    default: 20,
+    default: 50,
     displayOptions: {
       show: {
         resource: ['chat'],
         operation: ['getChatMessages'],
       },
     },
-    description: 'Maximum number of messages to return',
+    description: 'Maximum number of messages to return (max 100)',
   },
   {
-    displayName: 'Offset',
-    name: 'offset',
+    displayName: 'Offset Message ID',
+    name: 'offsetId',
     type: 'number',
     typeOptions: {
       minValue: 0,
@@ -85,6 +86,6 @@ export const chatDescription: INodeProperties[] = [
         operation: ['getChatMessages'],
       },
     },
-    description: 'Number of messages to skip for pagination',
+    description: 'Message ID to start from (pagination: returns messages older than this ID)',
   },
 ];

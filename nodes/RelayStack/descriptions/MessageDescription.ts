@@ -22,8 +22,8 @@ export const messageDescription: INodeProperties[] = [
     default: 'sendText',
   },
   {
-    displayName: 'Instance Name',
-    name: 'instanceName',
+    displayName: 'Instance ID',
+    name: 'instanceId',
     type: 'string',
     default: '',
     required: true,
@@ -33,13 +33,13 @@ export const messageDescription: INodeProperties[] = [
         operation: ['sendText'],
       },
     },
-    description: 'Name of the connected instance',
+    description: 'UUID of the connected instance',
   },
   {
     displayName: 'Chat ID',
     name: 'chatId',
-    type: 'string',
-    default: '',
+    type: 'number',
+    default: 0,
     required: true,
     displayOptions: {
       show: {
@@ -47,7 +47,7 @@ export const messageDescription: INodeProperties[] = [
         operation: ['sendText'],
       },
     },
-    description: 'ID of the target chat (phone number for private chats)',
+    description: 'Numeric ID of the target chat',
   },
   {
     displayName: 'Text',

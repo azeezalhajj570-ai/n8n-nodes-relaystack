@@ -1,10 +1,10 @@
 {
   "name": "n8n-nodes-relaystack",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "n8n community node package for RelayStack API - messaging automation platform",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && cp package.json dist/",
+    "build": "tsc && cp package.json dist/ && find nodes -name '*.svg' -exec cp {} dist/{} \\;",
     "dev": "tsc --watch",
     "format": "prettier --write .",
     "lint": "eslint . --ext .ts",
@@ -28,6 +28,14 @@
     "messaging"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azeezalhajj570-ai/n8n-nodes-relaystack.git"
+  },
+  "homepage": "https://github.com/azeezalhajj570-ai/n8n-nodes-relaystack#readme",
+  "bugs": {
+    "url": "https://github.com/azeezalhajj570-ai/n8n-nodes-relaystack/issues"
+  },
   "dependencies": {
     "axios": "^1.7.0"
   },

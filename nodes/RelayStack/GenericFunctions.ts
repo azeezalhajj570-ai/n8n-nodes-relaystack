@@ -34,7 +34,7 @@ export async function relayStackApiRequest(
 
   try {
     const response = await axios(config);
-    return response.data as IDataObject;
+    return (response.data || {}) as IDataObject;
   } catch (error) {
     throw normalizeApiError.call(this, error);
   }
@@ -47,21 +47,30 @@ export function normalizeApiError(this: IExecuteFunctions, error: unknown): Node
 
   if (error instanceof AxiosError) {
     const status = error.response?.status;
-    const serverMessage = error.response?.data?.message || error.response?.data?.error?.message;
+    const serverMessage = error.response?.data?.detail || error.response?.data?.message || error.response?.data?.error?.message;
 
-    let message = `RelayStack API error: ${error.message}`;
+    let message = `Telegram API Gateway error: ${error.message}`;
     if (status === 401) {
-      message = 'Invalid API key. Please check your RelayStack API credentials.';
+      message = 'Invalid API key. Please check your credentials.';
     } else if (status === 404) {
       message = 'Resource not found. The requested instance or endpoint does not exist.';
+    } else if (status === 422) {
+      const detail = error.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        message = `Validation error: ${detail.map((d: { msg: string }) => d.msg).join('; ')}`;
+      } else if (typeof detail === 'string') {
+        message = `Validation error: ${detail}`;
+      } else {
+        message = 'Validation error. Please check your input values.';
+      }
     } else if (status === 429) {
       message = 'Rate limit exceeded. Please wait before making more requests.';
     } else if (serverMessage) {
-      message = `RelayStack API error: ${serverMessage}`;
+      message = `Telegram API Gateway error: ${serverMessage}`;
     } else if (error.code === 'ECONNREFUSED' || error.code === 'ECONNABORTED') {
-      message = 'Could not connect to RelayStack API server. Please verify the Base URL.';
+      message = 'Could not connect to the API server. Please verify the Base URL.';
     } else if (error.code === 'ETIMEDOUT') {
-      message = 'Connection to RelayStack API server timed out. Please check network connectivity.';
+      message = 'Connection to the API server timed out. Please check network connectivity.';
     }
 
     return new NodeOperationError(this.getNode(), message);

@@ -23,12 +23,12 @@ beforeEach(() => {
 describe('relayStackApiRequest', () => {
   it('should make a GET request and return data', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const responseData = { instances: [{ name: 'test-instance', status: 'created' }] };
-    mock.onGet('https://relaystack.example.com/instance/list').reply(200, responseData);
+    const responseData = { instances: [{ id: 'uuid-1', name: 'test-instance', status: 'created' }] };
+    mock.onGet('https://relaystack.example.com/instances').reply(200, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/instance/list',
+      endpoint: '/instances',
     });
 
     expect(result).toEqual(responseData);
@@ -36,13 +36,13 @@ describe('relayStackApiRequest', () => {
 
   it('should make a POST request with body', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    const requestBody = { instanceName: 'my-instance', integration: 'telegram' };
-    const responseData = { instance: { instanceName: 'my-instance', status: 'created' } };
-    mock.onPost('https://relaystack.example.com/instance/create', requestBody).reply(200, responseData);
+    const requestBody = { name: 'my-instance' };
+    const responseData = { id: 'uuid-1', name: 'my-instance', status: 'pending' };
+    mock.onPost('https://relaystack.example.com/instances', requestBody).reply(201, responseData);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'POST',
-      endpoint: '/instance/create',
+      endpoint: '/instances',
       body: requestBody,
     });
 
@@ -52,15 +52,15 @@ describe('relayStackApiRequest', () => {
   it('should send query parameters', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
     const responseData = { messages: [] };
-    mock.onGet('https://relaystack.example.com/chat/messages').reply((config: AxiosRequestConfig) => {
-      expect(config.params).toEqual({ limit: 10, offset: 0 });
+    mock.onGet('https://relaystack.example.com/instances/uuid-1/chats/123/messages').reply((config: AxiosRequestConfig) => {
+      expect(config.params).toEqual({ limit: 50 });
       return [200, responseData];
     });
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'GET',
-      endpoint: '/chat/messages',
-      query: { limit: 10, offset: 0 },
+      endpoint: '/instances/uuid-1/chats/123/messages',
+      query: { limit: 50 },
     });
 
     expect(result).toEqual(responseData);
@@ -68,14 +68,14 @@ describe('relayStackApiRequest', () => {
 
   it('should make a DELETE request', async () => {
     const { relayStackApiRequest } = await import('../../nodes/RelayStack/GenericFunctions');
-    mock.onDelete('https://relaystack.example.com/instance/my-instance').reply(200, { success: true });
+    mock.onDelete('https://relaystack.example.com/instances/uuid-1').reply(204);
 
     const result = await relayStackApiRequest.call(mockExecuteFunctions, {
       method: 'DELETE',
-      endpoint: '/instance/my-instance',
+      endpoint: '/instances/uuid-1',
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({});
   });
 
   it('should strip trailing slash from baseUrl', async () => {
@@ -88,10 +88,10 @@ describe('relayStackApiRequest', () => {
       }),
     } as unknown as IExecuteFunctions;
 
-    mock.onGet('https://relaystack.example.com/instance/list').reply(200, { ok: true });
+    mock.onGet('https://relaystack.example.com/instances').reply(200, { ok: true });
     const result = await relayStackApiRequest.call(localMock, {
       method: 'GET',
-      endpoint: '/instance/list',
+      endpoint: '/instances',
     });
     expect(result).toEqual({ ok: true });
   });
@@ -112,7 +112,7 @@ describe('normalizeApiError', () => {
       'ERR_BAD_REQUEST',
       undefined,
       undefined,
-      { status: 401, data: { message: 'Unauthorized' }, headers: {}, statusText: 'Unauthorized', config: {} as any } as any,
+      { status: 401, data: { detail: 'Unauthorized' }, headers: {}, statusText: 'Unauthorized', config: {} as any } as any,
     );
     const result = normalizeApiError.call(mockExecuteFunctions, axiosError);
     expect(result.message).toContain('Invalid API key');
@@ -125,10 +125,29 @@ describe('normalizeApiError', () => {
       'ERR_BAD_REQUEST',
       undefined,
       undefined,
-      { status: 404, data: { message: 'Not found' }, headers: {}, statusText: 'Not Found', config: {} as any } as any,
+      { status: 404, data: { detail: 'Not found' }, headers: {}, statusText: 'Not Found', config: {} as any } as any,
     );
     const result = normalizeApiError.call(mockExecuteFunctions, axiosError);
     expect(result.message).toContain('Resource not found');
+  });
+
+  it('should return a user-friendly message for 422', async () => {
+    const { normalizeApiError } = await import('../../nodes/RelayStack/GenericFunctions');
+    const axiosError = new AxiosError(
+      'Request failed with status code 422',
+      'ERR_BAD_REQUEST',
+      undefined,
+      undefined,
+      {
+        status: 422,
+        data: { detail: [{ loc: ['body', 'phone_number'], msg: 'field required', type: 'value_error' }] },
+        headers: {},
+        statusText: 'Unprocessable Entity',
+        config: {} as any,
+      } as any,
+    );
+    const result = normalizeApiError.call(mockExecuteFunctions, axiosError);
+    expect(result.message).toContain('field required');
   });
 
   it('should return a user-friendly message for connection refused', async () => {
